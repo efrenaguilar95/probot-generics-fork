@@ -28,18 +28,21 @@ const DEFAULTS: Partial<NodeJS.ProcessEnv> = {
 
 /**
  * Merges configuration from defaults/environment variables/overrides and returns
- * a Probot instance. Finds private key using [`@probot/get-private-key`](https://github.com/probot/get-private-key).
+ * a Probot instance of type T where T is Probot by default. 
+ * Finds private key using [`@probot/get-private-key`](https://github.com/probot/get-private-key).
  *
  * @see https://probot.github.io/docs/configuration/
- * @param defaults default Options, will be overwritten if according environment variable is set
- * @param overrides overwrites defaults and according environment variables
- * @param env defaults to process.env
+ * @param CreateProbotOptions object with the following properties:
+ *  defaults default Options, will be overwritten if according environment variable is set
+ *  overrides overwrites defaults and according environment variables
+ *  env defaults to process.env
+ * @param ProbotConstructor the class to use for creating the Probot instance, defaults to Probot
  */
-export function createProbot({
+export function createProbot<T extends Probot>({
   overrides = {},
   defaults = {},
   env = process.env,
-}: CreateProbotOptions = {}) {
+}: CreateProbotOptions = {}, ProbotConstructor: new (options: Options) => T = Probot as unknown as new (options: Options) => T) : T {
   const privateKey = getPrivateKey({ env });
   const envWithDefaults = { ...DEFAULTS, ...env };
 
@@ -71,7 +74,7 @@ export function createProbot({
     sentryDsn: envWithDefaults.SENTRY_DSN,
   }).child({ name: "server" });
 
-  return new Probot({
+  return new ProbotConstructor({
     log: log.child({ name: "probot" }),
     ...probotOptions,
   });
